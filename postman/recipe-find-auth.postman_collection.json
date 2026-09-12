@@ -1,0 +1,226 @@
+{
+  "info": {
+    "_postman_id": "f5fd2b0c-0b64-4d4e-9b80-2d85f3c6ef51",
+    "name": "Recipe Find API - Auth",
+    "description": "Authentication requests for the Recipe Find API. Start the API on port 8080, then run Register or Login to populate the collection token variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "serverUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "userName",
+      "value": "Postman User"
+    },
+    {
+      "key": "userEmail",
+      "value": "postman@example.com"
+    },
+    {
+      "key": "userPassword",
+      "value": "Password123!"
+    },
+    {
+      "key": "newPassword",
+      "value": "NewPassword123!"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{serverUrl}}/health"
+      }
+    },
+    {
+      "name": "Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registration succeeded', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+              "});",
+              "if (pm.response.code === 201) {",
+              "    const body = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', body.data.tokens.accessToken);",
+              "    pm.collectionVariables.set('refreshToken', body.data.tokens.refreshToken);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login succeeded', function () {",
+              "    pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "if (pm.response.code === 200) {",
+              "    const body = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', body.data.tokens.accessToken);",
+              "    pm.collectionVariables.set('refreshToken', body.data.tokens.refreshToken);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/auth/get-profile"
+      }
+    },
+    {
+      "name": "Forgot Password - Verify Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/auth/forgot-password"
+      }
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"currentPassword\": \"{{userPassword}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/auth/reset-password"
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/auth/logout"
+      }
+    },
+    {
+      "name": "Refresh Access Token",
+      "description": "The application currently defines the refresh controller but does not register a refresh route in auth.routes.ts. This request is ready for when POST /auth/refresh is wired.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "refreshToken",
+            "value": "{{refreshToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/refresh"
+      }
+    }
+  ]
+}
