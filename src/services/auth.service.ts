@@ -76,51 +76,68 @@ const registerUser = async (name : string, email : string, password : string) =>
 }
 
 
-const loginUser = async ( email : string, password : string) => {
-    
-    // Fields Validation
-    if(!email) {
-        logger.error("Email field is missing")
-        throw new AppError("Email field is missing!", 400)
-    }
+const loginUser = async (email: string, password: string) => {
+  // Fields Validation
+  if (!email) {
+    logger.error("Email field is missing");
+    throw new AppError("Email field is missing!", 400);
+  }
 
-    if(!password) {
-        logger.error("Password field is missing")
-        throw new AppError("Password field is missing!", 400)
-    }
+  if (!password) {
+    logger.error("Password field is missing");
+    throw new AppError("Password field is missing!", 400);
+  }
 
-    // Validate Email (Check user with this email exists or not)
-    const existingUser = await authRepository.findUserByEmail(email);
-    if(!existingUser) {
-        logger.error("User not found")
-        throw new AppError("User not found", 404)
-    }
+  // Find user by email
+  const existingUser = await authRepository.findUserByEmail(email);
 
-    // Comparing password 
-    await comparePasswords(password, existingUser.password)
+  if (!existingUser) {
+    logger.error("User not found");
+    throw new AppError("Invalid email or password", 401);
+  }
 
-    
-    // Token Generation
-        const accessToken = generateAccessToken(existingUser.id)
-        const refreshToken = generateRefreshToken(existingUser.id)
+  // Compare password
+  const isPasswordCorrect = await comparePasswords(
+    password,
+    existingUser.password
+  );
 
-    const refreshExpiresAt = new Date();
-    refreshExpiresAt.setHours(refreshExpiresAt.getHours() + 8); // Set expiry to 8 hours from now
-    await authRepository.storeRefreshToken(existingUser.id, refreshToken, refreshExpiresAt); 
+  // IMPORTANT: Reject incorrect password
+  if (!isPasswordCorrect) {
+    logger.error("Incorrect password");
+    throw new AppError("Invalid email or password", 401);
+  }
 
-    // Hide Sensitive Data
-    const { password: _, refreshToken: _storedRefreshToken, expiresAt: _storedExpiresAt, ...data } = existingUser;
+  // Token Generation
+  const accessToken = generateAccessToken(existingUser.id);
+  const refreshToken = generateRefreshToken(existingUser.id);
 
+  const refreshExpiresAt = new Date();
+  refreshExpiresAt.setHours(refreshExpiresAt.getHours() + 8);
 
-    // Return Response 
-    return {
-        tokens: {
-            accessToken,
-            refreshToken
-        },
-        data
-    }
-}
+  await authRepository.storeRefreshToken(
+    existingUser.id,
+    refreshToken,
+    refreshExpiresAt
+  );
+
+  // Hide Sensitive Data
+  const {
+    password: _,
+    refreshToken: _storedRefreshToken,
+    expiresAt: _storedExpiresAt,
+    ...data
+  } = existingUser;
+
+  // Return Response
+  return {
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    data,
+  };
+};
 
 const forgotPassword = async (email : string) => {
     
