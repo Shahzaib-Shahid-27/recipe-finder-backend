@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import AppError from "../utils/AppError.ts";
-import logger from '../utils/logger.js';
+import logger from '../utils/logger.ts';
 import { Request, Response, NextFunction } from 'express';
 
 // Extend Request interface to include optional properties
