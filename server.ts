@@ -141,7 +141,7 @@ const sockets = new Set<Socket>();
 
 async function start() {
 
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = Number(process.env.PORT) || 3000;
 
 server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(`[Server] Server is running on port ${PORT}`);
