@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import AppError from "../utils/AppError.js";
+import AppError from "../utils/AppError.ts";
 import logger from '../utils/logger.ts';
 import { Request, Response, NextFunction } from 'express';
 
