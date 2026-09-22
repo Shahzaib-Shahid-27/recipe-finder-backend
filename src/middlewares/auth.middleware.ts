@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
 import AppError from '../utils/AppError.js';
-import { prisma } from '../prisma/prisma.ts';
+// import { prisma } from '../prisma/prisma.js';
 
 // Extend Express Request interface to include user
 declare global {
