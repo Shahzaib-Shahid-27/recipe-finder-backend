@@ -34,15 +34,28 @@ app.set('trust proxy', 1);
 
 // Middleware
 const allowedOrigins = [
-  
   "http://localhost:5173",
   "https://recipe-finder-frontend-livid.vercel.app",
+];
 
-  ];
-
-  app.use(
+app.use(
   cors({
-    origin: process.env.FRONTEND_URL ,
+   origin: function (origin, callback) {
+  console.log("CORS Origin:", origin);
+
+  if (!origin) {
+    return callback(null, true);
+  }
+
+  if (allowedOrigins.includes(origin)) {
+    return callback(null, true);
+  }
+
+  console.log("CORS BLOCKED:", origin);
+
+  return callback(new Error("Not allowed by CORS"));
+},
+
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -124,11 +137,11 @@ const sockets = new Set<Socket>();
 
 async function start() {
 
-  const PORT = process.env.PORT || 8080;
-  
-  server = app.listen(PORT, () => {
-    logger.info(`[Server] Server is running on port ${PORT}`);
-  });
+  const PORT = Number(process.env.PORT) || 8080;
+
+server = app.listen(PORT, "0.0.0.0", () => {
+  logger.info(`[Server] Server is running on port ${PORT}`);
+});
 
   // Track all socket connections
   server.on('connection', (socket: Socket) => {
