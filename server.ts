@@ -5,12 +5,12 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 
-import AppError from './src/utils/AppError.ts';
-import logger from './src/utils/logger.ts';
-import errorHandler from './src/middlewares/errorHandler.middleware.ts';
+import AppError from './src/utils/AppError.js';
+import logger from './src/utils/logger.js';
+import errorHandler from './src/middlewares/errorHandler.middleware.js';
 
-import {mealsRouter} from "./src/routes/meals.routes.ts";
-import { authRouter } from './src/routes/auth.routes.ts';
+import {mealsRouter} from "./src/routes/meals.routes.js";
+import { authRouter } from './src/routes/auth.routes.js';
 
 import { Request , Response , NextFunction } from 'express';
 import { Socket } from 'net';
@@ -146,7 +146,7 @@ const gracefulShutdown = async (signal?: string) => {
   
   // 1. Close database
   try {
-    const { prisma } = await import('./src/prisma/prisma.ts');
+    const { prisma } = await import('./src/prisma/prisma.js');
     await prisma.$disconnect();
     logger.info('[Server] Database connection closed');
   } catch (error) {

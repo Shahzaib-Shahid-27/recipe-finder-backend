@@ -1,6 +1,6 @@
 import { Router } from "express";
-import authController from "../controllers/auth.controller.ts";
-import {verifyJWT } from "../middlewares/auth.middleware.ts"
+import authController from "../controllers/auth.controller.js";
+import {verifyJWT } from "../middlewares/auth.middleware.js"
 
 export const authRouter = Router();
 

@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import { Request, Response } from "express";
-import * as mealsServices from "../services/meals.service.ts";
-import { getPaginationParams, paginate } from "../utils/pagination.ts";
+import * as mealsServices from "../services/meals.service.js";
+import { getPaginationParams, paginate } from "../utils/pagination.js";
 
 export const getAllMeals = asyncHandler(async (req: Request, res: Response) => {
     const { page, limit } = getPaginationParams(req);

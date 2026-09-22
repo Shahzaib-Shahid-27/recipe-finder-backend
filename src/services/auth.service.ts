@@ -1,9 +1,9 @@
-import AppError from "../utils/AppError.ts"
-import logger from "../utils/logger.ts"
+import AppError from "../utils/AppError.js"
+import logger from "../utils/logger.js"
 import bcrypt from 'bcryptjs';
 
-import  authRepository  from "../repositories/auth.repository.ts"
-import { generateAccessToken, generateRefreshToken } from "../utils/TokenGen.ts"
+import  authRepository  from "../repositories/auth.repository.js"
+import { generateAccessToken, generateRefreshToken } from "../utils/TokenGen.js"
 import { log } from "console";
 
 
