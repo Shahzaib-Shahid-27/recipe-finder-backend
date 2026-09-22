@@ -47,16 +47,16 @@ const forgotPassword = asyncHandler( async (req : Request, res: Response) => {
     })
 })
 
-const resetPassword = asyncHandler( async (req: Request, res: Response) => {
-    const { email, currentPassword, newPassword } = req.body;
+const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { email, newPassword } = req.body;
 
-    await authService.resetPassword(email, currentPassword, newPassword);
+    await authService.resetPassword(email, newPassword);
 
     res.status(200).json({
         status: "success",
-        message: "Your password has been reset! , Now you can login",
-    })
-})
+        message: "Your password has been reset! Now you can login",
+    });
+});
 
 const getProfile = asyncHandler( async (req: Request, res: Response) => {
     const userId = String(req.user?.userId);

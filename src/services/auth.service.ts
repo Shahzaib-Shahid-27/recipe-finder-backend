@@ -159,65 +159,56 @@ const forgotPassword = async (email : string) => {
 
 
 const resetPassword = async (
-  email: string,
-  currentPassword: string,
-  newPassword: string
+    email: string,
+    newPassword: string
 ) => {
-  // Field Validation
-  if (!email) {
-    logger.error("Email is missing");
-    throw new AppError("Email is missing!", 400);
-  }
 
-  if (!currentPassword || !newPassword) {
-    logger.error("Password fields are missing!");
-    throw new AppError("Password fields are missing!", 400);
-  }
+    // Field Validation
+    if (!email) {
+        logger.error("Email is missing");
+        throw new AppError("Email is missing!", 400);
+    }
 
-  // Validate Email
-  const existingUser = await authRepository.findUserByEmail(email);
+    if (!newPassword) {
+        logger.error("New password is missing");
+        throw new AppError("New password is missing!", 400);
+    }
 
-  if (!existingUser) {
-    logger.error("User not found");
-    throw new AppError("User not found", 404);
-  }
+    // Validate Email
+    const existingUser = await authRepository.findUserByEmail(email);
 
-  // Check current password
-  const isCurrentPasswordCorrect = await comparePasswords(
-    currentPassword,
-    existingUser.password
-  );
+    if (!existingUser) {
+        logger.error("User not found");
+        throw new AppError("User not found", 404);
+    }
 
-  if (!isCurrentPasswordCorrect) {
-    logger.error("Current password is incorrect");
-    throw new AppError("Current password is incorrect!", 401);
-  }
-
-  // Check if new password is same as current password
-  const isSamePassword = await comparePasswords(
-    newPassword,
-    existingUser.password
-  );
-
-  if (isSamePassword) {
-    logger.error("New password cannot be the same as current password");
-    throw new AppError(
-      "You cannot keep the same password. Please choose a different password!",
-      400
+    // Check if new password is same as current password
+    const isSamePassword = await comparePasswords(
+        newPassword,
+        existingUser.password
     );
-  }
 
-  // Hash new password
-  const hashedPassword = await hashPassword(newPassword);
+    if (isSamePassword) {
+        logger.error(
+            "New password cannot be the same as current password"
+        );
 
-  // Update password in database
-  await authRepository.updatePassword(
-    existingUser.id,
-    hashedPassword
-  );
+        throw new AppError(
+            "You cannot keep the same password. Please choose a different password!",
+            400
+        );
+    }
 
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
 
-  return true;
+    // Update password in database
+    await authRepository.updatePassword(
+        existingUser.id,
+        hashedPassword
+    );
+
+    return true;
 };
 
 
