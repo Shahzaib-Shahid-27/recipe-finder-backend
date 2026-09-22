@@ -114,6 +114,12 @@ app.get("/", (req: Request, res: Response) => {
 // Favicon
 app.get('/favicon.ico', (req: Request, res: Response) => res.status(204).end());
 
+app.get("/api/v1", (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "Recipe Finder API v1 is running",
+  });
+});
 
 // API routes
 app.use(`${PREFIX}/auth`, authRouter);
