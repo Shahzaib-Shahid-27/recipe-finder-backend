@@ -100,19 +100,20 @@ app.use(cookieParser());
 // =======================================
 // 
 
-app.get("/", (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: "Recipe Finder Backend is running",
-  });
-});
-
 // Health check route
 app.get('/health', (req: Request, res: Response) => {
 res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString() 
 });
+});
+
+// Root route
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "Recipe Finder Backend is running",
+  });
 });
 
 // Favicon
