@@ -34,10 +34,12 @@ app.set('trust proxy', 1);
 
 // Middleware
 const allowedOrigins = [
+  
   "http://localhost:5173",
   "https://recipe-finder-frontend-livid.vercel.app",
+
   ];
-  
+
 app.use(
   cors({
     origin: (origin, callback) => {
