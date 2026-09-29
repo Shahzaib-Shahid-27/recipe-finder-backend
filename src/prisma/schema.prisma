@@ -16,11 +16,12 @@ model User {
   id String @id @default(uuid())
   name String
   email String @unique
-  password String
+  password String?
   refreshToken String?
   expiresAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  googleId String? @unique
 }
 
 

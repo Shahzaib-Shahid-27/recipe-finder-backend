@@ -8,6 +8,8 @@ authRouter.post('/register', authController.registerUser)
 
 authRouter.post('/login', authController.loginUser)
 
+authRouter.post("/google",authController.googleLoginController);
+
 authRouter.post('/logout', authController.logout)
 
 authRouter.post('/forgot-password', authController.forgotPassword)

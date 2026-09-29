@@ -13,8 +13,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
         message: "User registered Successfully!",
         data
     })
-})
-
+});
 
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -27,7 +26,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
         data
     })
 
-})
+});
 
 const logout = asyncHandler( async (_req: Request, res: Response) => {
    res.status(200).json({
@@ -45,7 +44,7 @@ const forgotPassword = asyncHandler( async (req : Request, res: Response) => {
         status: "success",
         message: "Email Verified! , Now you can reset password"
     })
-})
+});
 
 const resetPassword = asyncHandler(async (req: Request, res: Response) => {
     const { email, newPassword } = req.body;
@@ -68,12 +67,34 @@ const getProfile = asyncHandler( async (req: Request, res: Response) => {
         message: "Profile fetched successfully",
         data
     })
-})
+});
+
+const googleLoginController = asyncHandler( async (req: Request, res: Response) => {
+
+    const { credential } = req.body;
+
+    if (!credential) {
+      res.status(400).json({
+        status: "error",
+        message: "Google credential is required.",
+      });
+      return;
+    }
+
+    const data = await authService.googleLogin(credential);
+
+    res.status(200).json({
+      status: "success",
+      message: "Google login successful!",
+      data,
+    });
+  }
+);
 
 
 
 
-// refresh token
+// Refresh token
 const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response) => {
     const refreshToken = String(req.headers.refreshtoken);
@@ -99,5 +120,7 @@ export default {
     forgotPassword,
     resetPassword,
     getProfile,
-    refreshAccessToken
+    refreshAccessToken,
+
+    googleLoginController
 }

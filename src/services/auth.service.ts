@@ -2,9 +2,12 @@ import AppError from "../utils/AppError.js"
 import logger from "../utils/logger.js"
 import bcrypt from 'bcryptjs';
 
+//  for login by google 
+import { OAuth2Client } from "google-auth-library";
+
 import  authRepository  from "../repositories/auth.repository.js"
 import { generateAccessToken, generateRefreshToken } from "../utils/TokenGen.js"
-import { log } from "console";
+
 
 
 // Password hashing function as helper
@@ -96,10 +99,16 @@ const loginUser = async (email: string, password: string) => {
     throw new AppError("Invalid email or password", 401);
   }
 
+    const passwordHash = existingUser.password;
+    if (!passwordHash) {
+        logger.error("User password is missing");
+        throw new AppError("Invalid email or password", 401);
+    }
+
   // Compare password
   const isPasswordCorrect = await comparePasswords(
     password,
-    existingUser.password
+        passwordHash
   );
 
   // IMPORTANT: Reject incorrect password
@@ -158,10 +167,7 @@ const forgotPassword = async (email : string) => {
 }
 
 
-const resetPassword = async (
-    email: string,
-    newPassword: string
-) => {
+const resetPassword = async (email: string,newPassword: string) => {
 
     // Field Validation
     if (!email) {
@@ -180,6 +186,11 @@ const resetPassword = async (
     if (!existingUser) {
         logger.error("User not found");
         throw new AppError("User not found", 404);
+    }
+
+    if (!existingUser.password) {
+        logger.error("User password is missing");
+        throw new AppError("User password is missing", 400);
     }
 
     // Check if new password is same as current password
@@ -268,6 +279,164 @@ const refreshAccessToken = async (refreshToken : string) => {
 }
 
 
+const googleLogin = async (idToken: string) => {
+  if (!idToken) {
+    logger.error("Google ID token is missing");
+
+    throw new AppError(
+      "Google ID token is required!",
+      400
+    );
+  }
+
+  const googleClient = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID
+  );
+
+  let payload;
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    payload = ticket.getPayload();
+  } catch {
+    logger.error(
+      "Google ID token verification failed"
+    );
+
+    throw new AppError(
+      "Invalid Google ID token.",
+      401
+    );
+  }
+
+  if (!payload) {
+    logger.error(
+      "Google token payload is missing"
+    );
+
+    throw new AppError(
+      "Invalid Google account information.",
+      401
+    );
+  }
+
+  const googleId = payload.sub;
+  const email = payload.email;
+  const name = payload.name;
+
+  if (!googleId || !email) {
+    logger.error(
+      "Google account information is incomplete"
+    );
+
+    throw new AppError(
+      "Google account information is incomplete.",
+      400
+    );
+  }
+
+  if (payload.email_verified !== true) {
+    logger.error(
+      "Google email is not verified"
+    );
+
+    throw new AppError(
+      "Google email is not verified.",
+      401
+    );
+  }
+
+  // 1. Find user using Google ID
+  let user =
+    await authRepository.findUserByGoogleId(
+      googleId
+    );
+
+  // 2. If Google ID is not connected,
+  //    search using email
+  if (!user) {
+    user =
+      await authRepository.findUserByEmail(
+        email
+      );
+
+    // Existing email account
+    if (user) {
+      user =
+        await authRepository.updateGoogleId(
+          user.id,
+          googleId
+        );
+    }
+  }
+
+  // 3. Create a new Google account
+  if (!user) {
+    user =
+      await authRepository.createUser(
+        name || "Google User",
+        email,
+        await hashPassword(
+          `${googleId}:${email}:${Date.now()}`
+        ),
+        googleId
+      );
+  }
+
+  if (!user) {
+    logger.error(
+      "Failed to create/find Google user"
+    );
+
+    throw new AppError(
+      "Unable to create Google account.",
+      500
+    );
+  }
+
+  // 4. Generate tokens
+  const accessToken =
+    generateAccessToken(user.id);
+
+  const refreshToken =
+    generateRefreshToken(user.id);
+
+  // 5. Refresh token expiry
+  const refreshExpiresAt = new Date();
+
+  refreshExpiresAt.setHours(
+    refreshExpiresAt.getHours() + 8
+  );
+
+  // 6. Store refresh token
+  await authRepository.storeRefreshToken(
+    user.id,
+    refreshToken,
+    refreshExpiresAt
+  );
+
+  // 7. Remove sensitive fields
+  const {
+    password: _password,
+    refreshToken: _storedRefreshToken,
+    expiresAt: _storedExpiresAt,
+    ...data
+  } = user;
+
+  // 8. Return same structure as normal login
+  return {
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    data,
+  };
+};
+
 
 export default {
     registerUser,
@@ -275,6 +444,8 @@ export default {
     forgotPassword,
     resetPassword,
     getProfile,
-    refreshAccessToken
+    refreshAccessToken,
+
+    googleLogin
 
 }

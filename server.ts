@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -35,6 +35,7 @@ app.set('trust proxy', 1);
 // Middleware
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "https://recipe-finder-frontend-livid.vercel.app",
 ];
 
@@ -58,6 +59,7 @@ app.use(
 );
 
 app.use(helmet({
+crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 contentSecurityPolicy: {
     directives: {
     defaultSrc: ["'self'"],
