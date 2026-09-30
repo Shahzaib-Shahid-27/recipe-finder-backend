@@ -12,6 +12,9 @@ authRouter.post("/google",authController.googleLoginController);
 
 authRouter.post('/logout', authController.logout)
 
+authRouter.get("/google", authController.googleRedirect);
+authRouter.get("/google/callback", authController.googleCallback);
+
 authRouter.post('/forgot-password', authController.forgotPassword)
 
 authRouter.post('/reset-password', authController.resetPassword)
