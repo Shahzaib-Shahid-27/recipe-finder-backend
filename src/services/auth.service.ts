@@ -280,6 +280,7 @@ const refreshAccessToken = async (refreshToken : string) => {
 
 
 const googleLogin = async (idToken: string) => {
+
   if (!idToken) {
     logger.error("Google ID token is missing");
 
@@ -399,11 +400,9 @@ const googleLogin = async (idToken: string) => {
   }
 
   // 4. Generate tokens
-  const accessToken =
-    generateAccessToken(user.id);
+  const accessToken = generateAccessToken(user.id);
 
-  const refreshToken =
-    generateRefreshToken(user.id);
+  const refreshToken = generateRefreshToken(user.id);
 
   // 5. Refresh token expiry
   const refreshExpiresAt = new Date();

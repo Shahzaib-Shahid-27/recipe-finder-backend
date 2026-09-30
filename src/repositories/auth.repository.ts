@@ -12,12 +12,7 @@ const findUserByGoogleId = async (googleId: string) => {
   });
 };
 
-const createUser = async (
-  name: string,
-  email: string,
-  password: string,
-  googleId?: string
-) => {
+const createUser = async (name: string,email: string,password: string,googleId?: string) => {
   return await prisma.user.create({
     data: {
       name,
@@ -28,10 +23,7 @@ const createUser = async (
   });
 };
 
-const updateGoogleId = async (
-  userId: string,
-  googleId: string
-) => {
+const updateGoogleId = async (userId: string,googleId: string) => {
   return await prisma.user.update({
     where: { id: userId },
     data: {
@@ -40,10 +32,7 @@ const updateGoogleId = async (
   });
 };
 
-const updatePassword = async (
-  id: string,
-  password: string
-) => {
+const updatePassword = async (id: string,password: string) => {
   return await prisma.user.update({
     where: { id },
     data: {
@@ -58,17 +47,13 @@ const findUserById = async (userId: string) => {
   });
 };
 
-const findUserByRefreshToken = async (
-  refreshToken: string
-) => {
+const findUserByRefreshToken = async (refreshToken: string) => {
   return await prisma.user.findFirst({
     where: { refreshToken },
   });
 };
 
-const deleteRefreshToken = async (
-  userId: string
-) => {
+const deleteRefreshToken = async (userId: string) => {
   return await prisma.user.update({
     where: { id: userId },
     data: {
@@ -78,11 +63,7 @@ const deleteRefreshToken = async (
   });
 };
 
-const storeRefreshToken = async (
-  userId: string,
-  refreshToken: string,
-  expiresAt: Date
-) => {
+const storeRefreshToken = async (userId: string,refreshToken: string,expiresAt: Date) => {
   return await prisma.user.update({
     where: { id: userId },
     data: {
