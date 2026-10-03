@@ -12,7 +12,7 @@ const findUserByGoogleId = async (googleId: string) => {
     })
 }
 
-const createUser = async (name: string, email: string, password: string) => {
+const createUser = async (name: string, email: string, password: string, googleId?: string) => {
     return await prisma.user.create({
         data: { name, email, password }
     })

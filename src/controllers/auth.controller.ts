@@ -1,289 +1,278 @@
-<<<<<<< HEAD
-import asyncHandler from "express-async-handler";
-import { Request, Response } from "express";
-import authService from "../services/auth.service.js";
-import AppError from "../utils/AppError.js";
-=======
-import asyncHandler from "express-async-handler"
-import { Request, Response } from "express"
-import  authService  from "../services/auth.service.js"
-import crypto from "crypto"
-import AppError from "../utils/AppError.js"
-import { getGoogleAuthUrl } from "../utils/googleAuth.js"
-import logger from "../utils/logger.js"
->>>>>>> 01887a5ccc60b7acd31b0dc86ed3f051ec4194cd
+
+  import { Request, Response } from "express";
+
+  import authService from "../services/auth.service.js";
+  import AppError from "../utils/AppError.js";
 
 
-const registerUser = asyncHandler(
-  async (req: Request, res: Response) => {
 
-    const {
-      name,
-      email,
-      password
-    } = req.body;
+  // ==============================
+  // REGISTER
+  // ==============================
 
-    const data =
-      await authService.registerUser(
+  const register =  (
+    async (req: Request, res: Response) => {
+      const {
         name,
         email,
-        password
-      );
+        password,
+      } = req.body;
 
-    res.status(201).json({
-      status: "success",
-      message: "User registered Successfully!",
-      data
-    });
-  }
-);
-
-
-const loginUser = asyncHandler(
-  async (req: Request, res: Response) => {
-
-    const {
-      email,
-      password
-    } = req.body;
-
-    const data =
-      await authService.loginUser(
-        email,
-        password
-      );
-
-    res.status(200).json({
-      status: "success",
-      message: "Login successful!",
-      data
-    });
-  }
-);
-
-
-const logout = asyncHandler(
-  async (_req: Request, res: Response) => {
-
-    res.status(200).json({
-      success: true,
-      message: "Logout successful"
-    });
-  }
-);
-
-
-const forgotPassword = asyncHandler(
-  async (req: Request, res: Response) => {
-
-    const { email } = req.body;
-
-    await authService.forgotPassword(email);
-
-    res.status(200).json({
-      status: "success",
-      message:
-        "Email Verified! , Now you can reset password"
-    });
-  }
-);
-
-
-const resetPassword = asyncHandler(
-  async (req: Request, res: Response) => {
-
-    const {
-      email,
-      newPassword
-    } = req.body;
-
-    await authService.resetPassword(
-      email,
-      newPassword
-    );
-
-    res.status(200).json({
-      status: "success",
-      message:
-        "Your password has been reset! Now you can login"
-    });
-  }
-);
-
-
-const getProfile = asyncHandler(
-  async (req: Request, res: Response) => {
-
-    const userId =
-      String(req.user?.userId);
-
-    const data =
-      await authService.getProfile(userId);
-
-    res.status(200).json({
-      status: "success",
-      message: "Profile fetched successfully",
-      data
-    });
-  }
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| Google Redirect
-|--------------------------------------------------------------------------
-*/
-
-const googleRedirect = asyncHandler(
-  async (_req: Request, res: Response) => {
-
-    const url =
-      authService.getGoogleAuthUrl();
-
-    res.redirect(url);
-  }
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| Google Callback
-|--------------------------------------------------------------------------
-*/
-
-const googleCallback = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { code } = req.query;
-
-    if (!code || typeof code !== "string") {
-      throw new AppError(
-        "Google authorization code is missing.",
-        400
-      );
-    }
-
-    const result = await authService.googleCallback(code);
-
-    res.redirect(
-      `${process.env.FRONTEND_URL}/google-success?accessToken=${result.tokens.accessToken}`
-    );
-  }
-);
-
-
-const refreshAccessToken = asyncHandler(
-  async (req: Request, res: Response) => {
-
-    const refreshToken =
-      String(req.headers.refreshtoken);
-
-    const {
-      newAccessToken,
-      newRefreshToken
-    } =
-      await authService.refreshAccessToken(
-        refreshToken
-      );
-
-    res.status(200).json({
-      status: "success",
-      message: "Token refreshed successfully",
-
-      tokens: {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken
+      if (!name || !email || !password) {
+        throw new AppError(
+          "Name, email and password are required.",
+          400
+        );
       }
-    });
-  }
-);
 
-<<<<<<< HEAD
+      const result =
+        await authService.registerUser(
+          name,
+          email,
+          password
+        );
 
-export default {
-  registerUser,
-  loginUser,
-  logout,
-  forgotPassword,
-  resetPassword,
-  getProfile,
-  refreshAccessToken,
-
-  googleRedirect,
-  googleCallback
-};
-=======
-const STATE_COOKIE = "google_oauth_state";
-
-// Step 1: send user to Google
-const googleRedirect = (_req: Request, res: Response) => {
-    const state = crypto.randomBytes(32).toString("hex");
-
-    res.cookie(STATE_COOKIE, state, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 10 * 60 * 1000, // 10 minutes
-    });
-
-    res.redirect(getGoogleAuthUrl(state));
-};
-
-// Step 2: Google sends user back here with ?code=...&state=...
-const googleCallback = asyncHandler(async (req: Request, res: Response) => {
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const fail = (message: string) =>
-        res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(message)}`);
-
-    const { code, state, error } = req.query;
-    const savedState = req.cookies?.[STATE_COOKIE];
-    res.clearCookie(STATE_COOKIE);
-
-    if (error) {
-        return fail("Google sign-in was cancelled.");
+      res.status(201).json({
+        success: true,
+        message: "User registered successfully.",
+        data: result,
+      });
     }
+  );
 
-    if (
-        typeof code !== "string" ||
-        typeof state !== "string" ||
-        !savedState ||
-        state !== savedState
-    ) {
-        return fail("Invalid Google sign-in request. Please try again.");
+  // ==============================
+  // LOGIN
+  // ==============================
+
+  const login = (
+    async (req: Request, res: Response) => {
+      const {
+        email,
+        password,
+      } = req.body;
+
+      if (!email || !password) {
+        throw new AppError(
+          "Email and password are required.",
+          400
+        );
+      }
+
+      const result =
+        await authService.loginUser(
+          email,
+          password
+        );
+
+      res.status(200).json({
+        success: true,
+        message: "Login successful.",
+        data: result,
+      });
     }
+  );
 
-    try {
-        const { tokens, isNewUser } = await authService.googleAuth({ code });
+  // ==============================
+  // LOGOUT
+  // ==============================
 
-        const params = new URLSearchParams({
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            isNewUser: String(isNewUser),
-        });
+  const logout = (
+    async (req: Request, res: Response) => {
+      const userId = req.user?.userId;
 
-        const target = `${frontendUrl}/auth/google/callback`;
+      if (!userId) {
+        throw new AppError(
+          "Unauthorized.",
+          401
+        );
+      }
 
-        // 👇 NEW: shows where the browser is being sent
-        logger.info(`Google login OK. FRONTEND_URL=${process.env.FRONTEND_URL} -> redirecting to ${target}`);
+      await authService.logout(userId);
 
-        res.redirect(`${target}#${params.toString()}`);
-    } catch (err) {
-        logger.error(`Google callback failed: ${(err as Error).stack ?? err}`);
-        fail(err instanceof AppError ? err.message : "Google sign-in failed.");
+      res.status(200).json({
+        success: true,
+        message: "Logged out successfully.",
+      });
     }
-});
+  );
 
-export default {
-    registerUser,
-    loginUser,
-    googleRedirect,
-    googleCallback,
+  // ==============================
+  // FORGOT PASSWORD
+  // ==============================
+
+  const forgotPassword = (
+    async (req: Request, res: Response) => {
+      const { email } = req.body;
+
+      if (!email) {
+        throw new AppError(
+          "Email is required.",
+          400
+        );
+      }
+
+      await authService.forgotPassword(
+        email
+      );
+
+      res.status(200).json({
+        success: true,
+        message:
+          "If an account with this email exists, password reset instructions will be sent.",
+      });
+    }
+  );
+
+  // ==============================
+  // RESET PASSWORD
+  // ==============================
+
+  const resetPassword = (
+    async (req: Request, res: Response) => {
+      const {
+        email,
+        newPassword,
+      } = req.body;
+
+      if (!email || !newPassword) {
+        throw new AppError(
+          "Email and new password are required.",
+          400
+        );
+      }
+
+      await authService.resetPassword(
+        email,
+        newPassword
+      );
+
+      res.status(200).json({
+        success: true,
+        message:
+          "Password reset successfully.",
+      });
+    }
+  );
+
+  // ==============================
+  // GET PROFILE
+  // ==============================
+
+  const getProfile = (
+    async (req: Request, res: Response) => {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        throw new AppError(
+          "Unauthorized.",
+          401
+        );
+      }
+
+      const user =
+        await authService.getProfile(
+          userId
+        );
+
+      res.status(200).json({
+        success: true,
+        data: user,
+      });
+    }
+  );
+
+  // ==============================
+  // REFRESH TOKEN
+  // ==============================
+
+  const refreshToken = (
+    async (req: Request, res: Response) => {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        throw new AppError(
+          "Refresh token is required.",
+          400
+        );
+      }
+
+      const tokens =
+        await authService.refreshAccessToken(
+          refreshToken
+        );
+
+      res.status(200).json({
+        success: true,
+        message:
+          "Access token refreshed successfully.",
+        data: tokens,
+      });
+    }
+  );
+
+  // ==============================
+  // GOOGLE REDIRECT
+  // ==============================
+
+  const googleRedirect = (
+    async (_req: Request, res: Response) => {
+      const url =
+        authService.getGoogleAuthUrl();
+
+      res.redirect(url);
+    }
+  );
+
+  // ==============================
+  // GOOGLE CALLBACK
+  // ==============================
+
+  const googleCallback = (
+    async (
+      req: Request,
+      res: Response
+    ) => {
+      const { code } = req.query;
+
+      if (
+        !code ||
+        typeof code !== "string"
+      ) {
+        throw new AppError(
+          "Google authorization code is missing.",
+          400
+        );
+      }
+
+      const result =
+        await authService.googleCallback(
+          code
+        );
+
+      const frontendUrl =
+        process.env.FRONTEND_URL ||
+        "http://localhost:5173";
+
+      res.redirect(
+        `${frontendUrl}/google-success?accessToken=${encodeURIComponent(
+          result.tokens.accessToken
+        )}`
+      );
+    }
+  );
+
+  // ==============================
+  // EXPORT
+  // ==============================
+
+  export default {
+    register,
+    login,
     logout,
     forgotPassword,
     resetPassword,
     getProfile,
-    refreshAccessToken,
-
-    googleLoginController
-}
->>>>>>> 01887a5ccc60b7acd31b0dc86ed3f051ec4194cd
+    refreshToken,
+    googleRedirect,
+    googleCallback,
+  };
