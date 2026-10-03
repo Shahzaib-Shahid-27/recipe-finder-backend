@@ -21,10 +21,17 @@ authRouter.get(
   authController.googleRedirect
 );
 
+<<<<<<< HEAD
 authRouter.get(
   "/google/callback",
   authController.googleCallback
 );
+=======
+authRouter.get("/google", authController.googleRedirect);
+authRouter.get("/google/callback", authController.googleCallback);
+
+authRouter.post('/forgot-password', authController.forgotPassword)
+>>>>>>> 01887a5ccc60b7acd31b0dc86ed3f051ec4194cd
 
 
 authRouter.post(
