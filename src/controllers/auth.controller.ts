@@ -1,126 +1,203 @@
-import asyncHandler from "express-async-handler"
-import { Request, Response } from "express"
-import  authService  from "../services/auth.service.js"
+import asyncHandler from "express-async-handler";
+import { Request, Response } from "express";
+import authService from "../services/auth.service.js";
+import AppError from "../utils/AppError.js";
 
 
-const registerUser = asyncHandler(async (req: Request, res: Response) => {
-    const {name, email, password} = req.body;
+const registerUser = asyncHandler(
+  async (req: Request, res: Response) => {
 
-    const data = await authService.registerUser(name, email, password)
+    const {
+      name,
+      email,
+      password
+    } = req.body;
+
+    const data =
+      await authService.registerUser(
+        name,
+        email,
+        password
+      );
 
     res.status(201).json({
-        status : "success",
-        message: "User registered Successfully!",
-        data
-    })
-});
-
-const loginUser = asyncHandler(async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-
-    const data = await authService.loginUser(email, password);
-
-    res.status(200).json({
-        status: "success",
-        message: "Login successful!",
-        data
-    })
-
-});
-
-const logout = asyncHandler( async (_req: Request, res: Response) => {
-   res.status(200).json({
-    success: true,
-    message: "Logout successful",
-  });
-});
-
-const forgotPassword = asyncHandler( async (req : Request, res: Response) => {
-    const { email } = req.body;
-
-    await authService.forgotPassword(email)
-
-    res.status(200).json({
-        status: "success",
-        message: "Email Verified! , Now you can reset password"
-    })
-});
-
-const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { email, newPassword } = req.body;
-
-    await authService.resetPassword(email, newPassword);
-
-    res.status(200).json({
-        status: "success",
-        message: "Your password has been reset! Now you can login",
-    });
-});
-
-const getProfile = asyncHandler( async (req: Request, res: Response) => {
-    const userId = String(req.user?.userId);
-
-    const data = await authService.getProfile(userId);
-
-    res.status(200).json({
-         status: "success",
-        message: "Profile fetched successfully",
-        data
-    })
-});
-
-const googleLoginController = asyncHandler( async (req: Request, res: Response) => {
-
-    const { credential } = req.body;
-
-    if (!credential) {
-      res.status(400).json({
-        status: "error",
-        message: "Google credential is required.",
-      });
-      return;
-    }
-
-    const data = await authService.googleLogin(credential);
-
-    res.status(200).json({
       status: "success",
-      message: "Google login successful!",
-      data,
+      message: "User registered Successfully!",
+      data
     });
   }
 );
 
 
+const loginUser = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const {
+      email,
+      password
+    } = req.body;
+
+    const data =
+      await authService.loginUser(
+        email,
+        password
+      );
+
+    res.status(200).json({
+      status: "success",
+      message: "Login successful!",
+      data
+    });
+  }
+);
 
 
-// Refresh token
+const logout = asyncHandler(
+  async (_req: Request, res: Response) => {
+
+    res.status(200).json({
+      success: true,
+      message: "Logout successful"
+    });
+  }
+);
+
+
+const forgotPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const { email } = req.body;
+
+    await authService.forgotPassword(email);
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "Email Verified! , Now you can reset password"
+    });
+  }
+);
+
+
+const resetPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const {
+      email,
+      newPassword
+    } = req.body;
+
+    await authService.resetPassword(
+      email,
+      newPassword
+    );
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "Your password has been reset! Now you can login"
+    });
+  }
+);
+
+
+const getProfile = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const userId =
+      String(req.user?.userId);
+
+    const data =
+      await authService.getProfile(userId);
+
+    res.status(200).json({
+      status: "success",
+      message: "Profile fetched successfully",
+      data
+    });
+  }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Google Redirect
+|--------------------------------------------------------------------------
+*/
+
+const googleRedirect = asyncHandler(
+  async (_req: Request, res: Response) => {
+
+    const url =
+      authService.getGoogleAuthUrl();
+
+    res.redirect(url);
+  }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Google Callback
+|--------------------------------------------------------------------------
+*/
+
+const googleCallback = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { code } = req.query;
+
+    if (!code || typeof code !== "string") {
+      throw new AppError(
+        "Google authorization code is missing.",
+        400
+      );
+    }
+
+    const result = await authService.googleCallback(code);
+
+    res.redirect(
+      `${process.env.FRONTEND_URL}/google-success?accessToken=${result.tokens.accessToken}`
+    );
+  }
+);
+
+
 const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response) => {
-    const refreshToken = String(req.headers.refreshtoken);
 
-    const { newAccessToken, newRefreshToken } =
-      await authService.refreshAccessToken(refreshToken);
+    const refreshToken =
+      String(req.headers.refreshtoken);
+
+    const {
+      newAccessToken,
+      newRefreshToken
+    } =
+      await authService.refreshAccessToken(
+        refreshToken
+      );
 
     res.status(200).json({
       status: "success",
       message: "Token refreshed successfully",
+
       tokens: {
         accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      },
+        refreshToken: newRefreshToken
+      }
     });
   }
 );
 
-export default {
-    registerUser,
-    loginUser,
-    logout,
-    forgotPassword,
-    resetPassword,
-    getProfile,
-    refreshAccessToken,
 
-    googleLoginController
-}
+export default {
+  registerUser,
+  loginUser,
+  logout,
+  forgotPassword,
+  resetPassword,
+  getProfile,
+  refreshAccessToken,
+
+  googleRedirect,
+  googleCallback
+};

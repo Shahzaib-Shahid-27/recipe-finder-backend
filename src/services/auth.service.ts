@@ -1,144 +1,103 @@
-import AppError from "../utils/AppError.js"
-import logger from "../utils/logger.js"
-import bcrypt from 'bcryptjs';
-
-//  for login by google 
 import { OAuth2Client } from "google-auth-library";
+import bcrypt from "bcryptjs";
+import AppError from "../utils/AppError.js";
+import authRepository from "../repositories/auth.repository.js";
 
-import  authRepository  from "../repositories/auth.repository.js"
-import { generateAccessToken, generateRefreshToken } from "../utils/TokenGen.js"
+// IMPORTANT:
+// Keep these imports pointing to the same files you already use
+// in your project.
 
+import {generateAccessToken,generateRefreshToken,} from "../utils/TokenGen.js";
 
-
-// Password hashing function as helper
 const hashPassword = async (password: string): Promise<string> => {
-    const saltRounds = 12;
-    return await bcrypt.hash(password, saltRounds);
+  return await bcrypt.hash(password, 10);
 };
 
-// Password comparison function as helper
-const comparePasswords = async (password: string, hashedPassword: string): Promise<boolean> => {
-    return await bcrypt.compare(password, hashedPassword);
+const comparePassword = async (
+  password: string,
+  hashedPassword: string
+): Promise<boolean> => {
+  return await bcrypt.compare(password, hashedPassword);
 };
 
+/*
+|--------------------------------------------------------------------------
+| Google OAuth Client
+|--------------------------------------------------------------------------
+*/
 
-const registerUser = async (name : string, email : string, password : string) => {
-    
-    // Fields Validation
-    if(!name) {
-        logger.error("Name field is missing")
-        throw new AppError("Name field is missing!", 400)
-    }
-
-    if(!email) {
-        logger.error("Email field is missing")
-        throw new AppError("Email field is missing!", 400)
-    }
-
-    if(!password) {
-        logger.error("Password field is missing")
-        throw new AppError("Password field is missing!", 400)
-    }
-
-    // Validate Email (Check user with this email exists or not)
-    const existingUser = await authRepository.findUserByEmail(email);
-    if(existingUser) {
-        logger.error("User with this email already exists!")
-        throw new AppError("User with this email already exists!", 400)
-    }
-
-    // hashed password 
-    const hashedPassword = await hashPassword(password)
-
-    // Create User 
-    const createUser = await authRepository.createUser(name, email, hashedPassword)
-    if(!createUser) {
-        logger.error("Failed to create user!")
-        throw new AppError("Failed to create user!", 400)
-    }
-    
-    // Token Generation
-    const accessToken = generateAccessToken(createUser.id)
-    const refreshToken = generateRefreshToken(createUser.id)
-
-    const refreshExpiresAt = new Date();
-    refreshExpiresAt.setHours(refreshExpiresAt.getHours() + 8); // Set expiry to 8 hours from now
-    await authRepository.storeRefreshToken(createUser.id, refreshToken, refreshExpiresAt); 
-
-    // Hide Sensitive Data
-    const { password: _, refreshToken: _storedRefreshToken, expiresAt: _storedExpiresAt, ...data } = createUser;
-
-    // Return Response 
-    return {
-        tokens: {
-            accessToken,
-            refreshToken
-        },
-        data
-    }
-}
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
 
 
-const loginUser = async (email: string, password: string) => {
-  // Fields Validation
-  if (!email) {
-    logger.error("Email field is missing");
-    throw new AppError("Email field is missing!", 400);
+/*
+|--------------------------------------------------------------------------
+| Register User
+|--------------------------------------------------------------------------
+*/
+
+const registerUser = async (
+  name: string,
+  email: string,
+  password: string
+) => {
+
+  const existingUser =
+    await authRepository.findUserByEmail(email);
+
+  if (existingUser) {
+    throw new AppError(
+      "User with this email already exists.",
+      409
+    );
   }
 
-  if (!password) {
-    logger.error("Password field is missing");
-    throw new AppError("Password field is missing!", 400);
+  const hashedPasswordValue =
+    await hashPassword(password);
+
+  const user =
+    await authRepository.createUser(
+      name,
+      email,
+      hashedPasswordValue
+    );
+
+  if (!user) {
+    throw new AppError(
+      "Unable to create user.",
+      500
+    );
   }
 
-  // Find user by email
-  const existingUser = await authRepository.findUserByEmail(email);
+  const accessToken =
+    generateAccessToken(user.id);
 
-  if (!existingUser) {
-    logger.error("User not found");
-    throw new AppError("Invalid email or password", 401);
-  }
+  const refreshToken =
+    generateRefreshToken(user.id);
 
-    const passwordHash = existingUser.password;
-    if (!passwordHash) {
-        logger.error("User password is missing");
-        throw new AppError("Invalid email or password", 401);
-    }
+  const refreshExpiresAt =
+    new Date();
 
-  // Compare password
-  const isPasswordCorrect = await comparePasswords(
-    password,
-        passwordHash
+  refreshExpiresAt.setHours(
+    refreshExpiresAt.getHours() + 8
   );
 
-  // IMPORTANT: Reject incorrect password
-  if (!isPasswordCorrect) {
-    logger.error("Incorrect password");
-    throw new AppError("Invalid email or password", 401);
-  }
-
-  // Token Generation
-  const accessToken = generateAccessToken(existingUser.id);
-  const refreshToken = generateRefreshToken(existingUser.id);
-
-  const refreshExpiresAt = new Date();
-  refreshExpiresAt.setHours(refreshExpiresAt.getHours() + 8);
-
   await authRepository.storeRefreshToken(
-    existingUser.id,
+    user.id,
     refreshToken,
     refreshExpiresAt
   );
 
-  // Hide Sensitive Data
   const {
-    password: _,
+    password: _password,
     refreshToken: _storedRefreshToken,
     expiresAt: _storedExpiresAt,
     ...data
-  } = existingUser;
+  } = user;
 
-  // Return Response
   return {
     tokens: {
       accessToken,
@@ -148,165 +107,363 @@ const loginUser = async (email: string, password: string) => {
   };
 };
 
-const forgotPassword = async (email : string) => {
-    
-    // Field Validation
-    if(!email) {
-        logger.error("Email field is missing")
-        throw new AppError("Email field is missing!", 400)
-    }
 
-     // Validate Email (Check user with this email exists or not)
-    const existingUser = await authRepository.findUserByEmail(email);
-    if(!existingUser) {
-        logger.error("User not found")
-        throw new AppError("User not found", 404)
-    }
+/*
+|--------------------------------------------------------------------------
+| Login User
+|--------------------------------------------------------------------------
+*/
 
-    return true;
-}
+const loginUser = async (
+  email: string,
+  password: string
+) => {
 
+  const user =
+    await authRepository.findUserByEmail(email);
 
-const resetPassword = async (email: string,newPassword: string) => {
+  if (!user) {
+    throw new AppError(
+      "Invalid email or password.",
+      401
+    );
+  }
 
-    // Field Validation
-    if (!email) {
-        logger.error("Email is missing");
-        throw new AppError("Email is missing!", 400);
-    }
+  if (user.password === null) {
+    throw new AppError(
+      "Invalid email or password.",
+      401
+    );
+  }
 
-    if (!newPassword) {
-        logger.error("New password is missing");
-        throw new AppError("New password is missing!", 400);
-    }
-
-    // Validate Email
-    const existingUser = await authRepository.findUserByEmail(email);
-
-    if (!existingUser) {
-        logger.error("User not found");
-        throw new AppError("User not found", 404);
-    }
-
-    if (!existingUser.password) {
-        logger.error("User password is missing");
-        throw new AppError("User password is missing", 400);
-    }
-
-    // Check if new password is same as current password
-    const isSamePassword = await comparePasswords(
-        newPassword,
-        existingUser.password
+  const passwordMatch =
+    await comparePassword(
+      password,
+      user.password
     );
 
-    if (isSamePassword) {
-        logger.error(
-            "New password cannot be the same as current password"
-        );
-
-        throw new AppError(
-            "You cannot keep the same password. Please choose a different password!",
-            400
-        );
-    }
-
-    // Hash new password
-    const hashedPassword = await hashPassword(newPassword);
-
-    // Update password in database
-    await authRepository.updatePassword(
-        existingUser.id,
-        hashedPassword
+  if (!passwordMatch) {
+    throw new AppError(
+      "Invalid email or password.",
+      401
     );
+  }
 
-    return true;
+  const accessToken =
+    generateAccessToken(user.id);
+
+  const refreshToken =
+    generateRefreshToken(user.id);
+
+  const refreshExpiresAt =
+    new Date();
+
+  refreshExpiresAt.setHours(
+    refreshExpiresAt.getHours() + 8
+  );
+
+  await authRepository.storeRefreshToken(
+    user.id,
+    refreshToken,
+    refreshExpiresAt
+  );
+
+  const {
+    password: _password,
+    refreshToken: _storedRefreshToken,
+    expiresAt: _storedExpiresAt,
+    ...data
+  } = user;
+
+  return {
+    tokens: {
+      accessToken,
+      refreshToken,
+    },
+    data,
+  };
 };
 
 
-const getProfile = async (userId : string) => {
-    
-    // Field Validation
-    if(!userId) {
-        logger.error("UserId is missing!")
-        throw new AppError("UserId is missing!", 400)
-    }
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
 
-    // Existing User 
-    const existingUser = await authRepository.findUserById(userId);
+const logout = async () => {
+  return true;
+};
 
-    if (!existingUser) {
-        logger.error("User not found");
-        throw new AppError("User not found", 404);
-    }
 
-    // Hide Sensitive Data
-    const { password: _, refreshToken: _storedRefreshToken, expiresAt: _storedExpiresAt, ...data } = existingUser;
+/*
+|--------------------------------------------------------------------------
+| Forgot Password
+|--------------------------------------------------------------------------
+*/
 
+const forgotPassword = async (
+  email: string
+) => {
+
+  const user =
+    await authRepository.findUserByEmail(email);
+
+  if (!user) {
+    throw new AppError(
+      "User with this email does not exist.",
+      404
+    );
+  }
+
+  return true;
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Reset Password
+|--------------------------------------------------------------------------
+*/
+
+const resetPassword = async (
+  email: string,
+  newPassword: string
+) => {
+
+  const user =
+    await authRepository.findUserByEmail(email);
+
+  if (!user) {
+    throw new AppError(
+      "User not found.",
+      404
+    );
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await authRepository.updatePassword(
+    user.id,
+    hashedPassword
+  );
+
+  return true;
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Get Profile
+|--------------------------------------------------------------------------
+*/
+
+const getProfile = async (
+  userId: string
+) => {
+
+  const user =
+    await authRepository.findUserById(userId);
+
+  if (!user) {
+    throw new AppError(
+      "User not found.",
+      404
+    );
+  }
+
+  const {
+    password: _password,
+    refreshToken: _refreshToken,
+    expiresAt: _expiresAt,
+    ...data
+  } = user;
+
+  return data;
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Refresh Access Token
+|--------------------------------------------------------------------------
+*/
+
+const refreshAccessToken = async (
+  refreshToken: string
+) => {
+
+  if (!refreshToken) {
+    throw new AppError(
+      "Refresh token is required.",
+      401
+    );
+  }
+
+  const storedToken =
+    await authRepository.findUserByRefreshToken(
+      refreshToken
+    );
+
+  if (!storedToken) {
+    throw new AppError(
+      "Invalid refresh token.",
+      401
+    );
+  }
+
+  if (
+    !storedToken.expiresAt ||
+    storedToken.expiresAt < new Date()
+  ) {
+    throw new AppError(
+      "Refresh token expired.",
+      401
+    );
+  }
+
+  const newAccessToken =
+    generateAccessToken(
+      storedToken.id
+    );
+
+  const newRefreshToken =
+    generateRefreshToken(
+      storedToken.id
+    );
+
+  const refreshExpiresAt =
+    new Date();
+
+  refreshExpiresAt.setHours(
+    refreshExpiresAt.getHours() + 8
+  );
+
+  await authRepository.storeRefreshToken(
+    storedToken.id,
+    newRefreshToken,
+    refreshExpiresAt
+  );
 
   return {
-    data
+    newAccessToken,
+    newRefreshToken,
+  };
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| GOOGLE - Generate Authorization URL
+|--------------------------------------------------------------------------
+*/
+
+const getGoogleAuthUrl = (): string => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new AppError("GOOGLE_CLIENT_ID is missing.", 500);
   }
-}
+
+  if (!process.env.GOOGLE_CLIENT_SECRET) {
+    throw new AppError("GOOGLE_CLIENT_SECRET is missing.", 500);
+  }
+
+  if (!process.env.GOOGLE_REDIRECT_URI) {
+    throw new AppError("GOOGLE_REDIRECT_URI is missing.", 500);
+  }
+
+  return googleClient.generateAuthUrl({
+    access_type: "offline",
+    scope: ["openid", "email", "profile"],
+    prompt: "select_account",
+  });
+};  
 
 
-const refreshAccessToken = async (refreshToken : string) => {
-    
-    if (!refreshToken) {
-        throw new AppError("Refresh token is required", 400);
-    }
+/*
+|--------------------------------------------------------------------------
+| GOOGLE - Callback
+|--------------------------------------------------------------------------
+*/
 
-    const userToken = await authRepository.findUserByRefreshToken(refreshToken);
-
-    if (!userToken) {
-        throw new AppError("Invalid refresh token", 400);
-    }
-
-    // Check if refresh token is expired
-    if (!userToken.expiresAt || userToken.expiresAt < new Date()) {
-        await authRepository.deleteRefreshToken(userToken.id); // Invalidate the expired token
-        throw new AppError("Refresh token has expired", 401);
-    }
-
-    // Generate new tokens
-    const newAccessToken = generateAccessToken(userToken.id );
-    const newRefreshToken = generateRefreshToken(userToken.id);
-
-
-    return {
-        newAccessToken,
-        newRefreshToken,
-    };
-}
-
-
-const googleLogin = async (idToken: string) => {
-
-  if (!idToken) {
-    logger.error("Google ID token is missing");
-
+const googleCallback = async (code: string) => {
+  if (!code) {
     throw new AppError(
-      "Google ID token is required!",
+      "Google authorization code is missing.",
       400
     );
   }
 
-  const googleClient = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID
-  );
+  try {
+    const { tokens } = await googleClient.getToken(code);
+
+    console.log("Google tokens received:", {
+      hasAccessToken: !!tokens.access_token,
+      hasIdToken: !!tokens.id_token,
+    });
+
+    if (!tokens.id_token) {
+      throw new AppError(
+        "Google ID token was not returned.",
+        401
+      );
+    }
+
+    return await googleLogin(tokens.id_token);
+  } catch (error) {
+    console.error("GOOGLE CALLBACK ERROR:", error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      throw new AppError(
+        `Google authentication failed: ${error.message}`,
+        401
+      );
+    }
+
+    throw new AppError(
+      "Google authentication failed.",
+      401
+    );
+  }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| GOOGLE - Login
+|--------------------------------------------------------------------------
+*/
+
+const googleLogin = async (
+  idToken: string
+) => {
+
+  if (!idToken) {
+    throw new AppError(
+      "Google ID token is required.",
+      400
+    );
+  }
 
   let payload;
 
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
 
-    payload = ticket.getPayload();
+    const ticket =
+      await googleClient.verifyIdToken({
+        idToken,
+
+        audience:
+          process.env.GOOGLE_CLIENT_ID,
+      });
+
+    payload =
+      ticket.getPayload();
+
   } catch {
-    logger.error(
-      "Google ID token verification failed"
-    );
 
     throw new AppError(
       "Invalid Google ID token.",
@@ -315,58 +472,67 @@ const googleLogin = async (idToken: string) => {
   }
 
   if (!payload) {
-    logger.error(
-      "Google token payload is missing"
-    );
-
     throw new AppError(
       "Invalid Google account information.",
       401
     );
   }
 
-  const googleId = payload.sub;
-  const email = payload.email;
-  const name = payload.name;
+  const googleId =
+    payload.sub;
+
+  const email =
+    payload.email;
+
+  const name =
+    payload.name;
+
 
   if (!googleId || !email) {
-    logger.error(
-      "Google account information is incomplete"
-    );
-
     throw new AppError(
       "Google account information is incomplete.",
       400
     );
   }
 
-  if (payload.email_verified !== true) {
-    logger.error(
-      "Google email is not verified"
-    );
 
+  if (
+    payload.email_verified !== true
+  ) {
     throw new AppError(
       "Google email is not verified.",
       401
     );
   }
 
-  // 1. Find user using Google ID
+
+  /*
+  |--------------------------------------------------------------------------
+  | Find by Google ID
+  |--------------------------------------------------------------------------
+  */
+
   let user =
     await authRepository.findUserByGoogleId(
       googleId
     );
 
-  // 2. If Google ID is not connected,
-  //    search using email
+
+  /*
+  |--------------------------------------------------------------------------
+  | Find by Email
+  |--------------------------------------------------------------------------
+  */
+
   if (!user) {
+
     user =
       await authRepository.findUserByEmail(
         email
       );
 
-    // Existing email account
     if (user) {
+
       user =
         await authRepository.updateGoogleId(
           user.id,
@@ -375,50 +541,79 @@ const googleLogin = async (idToken: string) => {
     }
   }
 
-  // 3. Create a new Google account
+
+  /*
+  |--------------------------------------------------------------------------
+  | Create User
+  |--------------------------------------------------------------------------
+  */
+
   if (!user) {
+
+    const randomPassword =
+      `${googleId}:${email}:${Date.now()}`;
+
+    const hashedPassword =
+      await hashPassword(
+        randomPassword
+      );
+
     user =
       await authRepository.createUser(
         name || "Google User",
         email,
-        await hashPassword(
-          `${googleId}:${email}:${Date.now()}`
-        ),
+        hashedPassword,
         googleId
       );
   }
 
-  if (!user) {
-    logger.error(
-      "Failed to create/find Google user"
-    );
 
+  if (!user) {
     throw new AppError(
       "Unable to create Google account.",
       500
     );
   }
 
-  // 4. Generate tokens
-  const accessToken = generateAccessToken(user.id);
 
-  const refreshToken = generateRefreshToken(user.id);
+  /*
+  |--------------------------------------------------------------------------
+  | Generate JWT
+  |--------------------------------------------------------------------------
+  */
 
-  // 5. Refresh token expiry
-  const refreshExpiresAt = new Date();
+  const accessToken =
+    generateAccessToken(
+      user.id
+    );
+
+  const refreshToken =
+    generateRefreshToken(
+      user.id
+    );
+
+
+  const refreshExpiresAt =
+    new Date();
 
   refreshExpiresAt.setHours(
     refreshExpiresAt.getHours() + 8
   );
 
-  // 6. Store refresh token
+
   await authRepository.storeRefreshToken(
     user.id,
     refreshToken,
     refreshExpiresAt
   );
 
-  // 7. Remove sensitive fields
+
+  /*
+  |--------------------------------------------------------------------------
+  | Remove Sensitive Fields
+  |--------------------------------------------------------------------------
+  */
+
   const {
     password: _password,
     refreshToken: _storedRefreshToken,
@@ -426,25 +621,39 @@ const googleLogin = async (idToken: string) => {
     ...data
   } = user;
 
-  // 8. Return same structure as normal login
+
   return {
+
     tokens: {
       accessToken,
       refreshToken,
     },
+
     data,
+
   };
 };
 
 
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+*/
+
 export default {
-    registerUser,
-    loginUser,
-    forgotPassword,
-    resetPassword,
-    getProfile,
-    refreshAccessToken,
 
-    googleLogin
+  registerUser,
+  loginUser,
+  logout,
+  forgotPassword,
+  resetPassword,
+  getProfile,
+  refreshAccessToken,
 
-}
+  googleLogin,
+  getGoogleAuthUrl,
+  googleCallback,
+
+};
+
