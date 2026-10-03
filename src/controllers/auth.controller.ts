@@ -8,15 +8,11 @@
 
   // ==============================
   // REGISTER
-  // ==============================
 
-  const register =  (
-    async (req: Request, res: Response) => {
-      const {
-        name,
-        email,
-        password,
-      } = req.body;
+  const register =  ( 
+    async (req: Request, res: Response ) => {
+
+      const { name, email, password, } = req.body;
 
       if (!name || !email || !password) {
         throw new AppError(
@@ -25,8 +21,7 @@
         );
       }
 
-      const result =
-        await authService.registerUser(
+      const result = await authService.registerUser(
           name,
           email,
           password
@@ -42,7 +37,6 @@
 
   // ==============================
   // LOGIN
-  // ==============================
 
   const login = (
     async (req: Request, res: Response) => {
@@ -58,8 +52,7 @@
         );
       }
 
-      const result =
-        await authService.loginUser(
+      const result = await authService.loginUser(
           email,
           password
         );
@@ -78,6 +71,7 @@
 
   const logout = (
     async (req: Request, res: Response) => {
+
       const userId = req.user?.userId;
 
       if (!userId) {
@@ -98,7 +92,6 @@
 
   // ==============================
   // FORGOT PASSWORD
-  // ==============================
 
   const forgotPassword = (
     async (req: Request, res: Response) => {
@@ -125,14 +118,11 @@
 
   // ==============================
   // RESET PASSWORD
-  // ==============================
 
   const resetPassword = (
     async (req: Request, res: Response) => {
-      const {
-        email,
-        newPassword,
-      } = req.body;
+
+      const { email, newPassword, } = req.body;
 
       if (!email || !newPassword) {
         throw new AppError(
@@ -156,7 +146,6 @@
 
   // ==============================
   // GET PROFILE
-  // ==============================
 
   const getProfile = (
     async (req: Request, res: Response) => {
@@ -169,10 +158,7 @@
         );
       }
 
-      const user =
-        await authService.getProfile(
-          userId
-        );
+      const user = await authService.getProfile( userId );
 
       res.status(200).json({
         success: true,
@@ -183,10 +169,11 @@
 
   // ==============================
   // REFRESH TOKEN
-  // ==============================
 
   const refreshToken = (
+
     async (req: Request, res: Response) => {
+
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
@@ -196,15 +183,11 @@
         );
       }
 
-      const tokens =
-        await authService.refreshAccessToken(
-          refreshToken
-        );
+      const tokens =  await authService.refreshAccessToken(refreshToken);
 
       res.status(200).json({
         success: true,
-        message:
-          "Access token refreshed successfully.",
+        message:"Access token refreshed successfully.",
         data: tokens,
       });
     }
@@ -212,12 +195,11 @@
 
   // ==============================
   // GOOGLE REDIRECT
-  // ==============================
 
   const googleRedirect = (
     async (_req: Request, res: Response) => {
-      const url =
-        authService.getGoogleAuthUrl();
+
+      const url = authService.getGoogleAuthUrl();
 
       res.redirect(url);
     }
@@ -225,33 +207,21 @@
 
   // ==============================
   // GOOGLE CALLBACK
-  // ==============================
 
   const googleCallback = (
-    async (
-      req: Request,
-      res: Response
-    ) => {
+    async (req: Request,res: Response ) => {
       const { code } = req.query;
 
-      if (
-        !code ||
-        typeof code !== "string"
-      ) {
+      if ( !code || typeof code !== "string" ) {
         throw new AppError(
           "Google authorization code is missing.",
           400
         );
       }
 
-      const result =
-        await authService.googleCallback(
-          code
-        );
+      const result =await authService.googleCallback(code);
 
-      const frontendUrl = 
-      process.env.FRONTEND_URL ||
-        "http://localhost:5173";
+      const frontendUrl =  process.env.FRONTEND_URL || "http://localhost:5173";
 
       res.redirect(
         `${frontendUrl}/google-success?accessToken=${encodeURIComponent(
@@ -263,7 +233,6 @@
 
   // ==============================
   // EXPORT
-  // ==============================
 
   export default {
     register,

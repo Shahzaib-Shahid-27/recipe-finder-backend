@@ -18,19 +18,19 @@ import { Socket } from 'net';
 // const { OAuth2Client } = require("google-auth-library");
 
 declare global {
-namespace Express {
-    interface Request {
-    id?: string;
-    requestId?: string;
-    }
-}
+  namespace Express {
+      interface Request {
+      id?: string;
+      requestId?: string;
+      }
+  }
 }
 
 const app = express();
 const PREFIX = '/api/v1'
 
 if (process.env.NODE_ENV === 'production') {
-app.set('trust proxy', 1);
+  app.set('trust proxy', 1);
 }
 
 // Middleware
@@ -95,44 +95,43 @@ app.use(cookieParser());
 
 // ========================================
 // ROUTES - MUST BE HERE, AFTER MIDDLEWARE
-// =======================================
-// 
+// ======================================= 
 
 // Health check route
 app.get('/health', (req: Request, res: Response) => {
-res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString() 
-});
+    res.status(200).json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString() 
+    });
 });
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: "Recipe Finder Backend is running",
-  });
+    res.status(200).json({
+      success: true,
+      message: "Recipe Finder Backend is running",
+    });
 });
 
 // Favicon
 app.get('/favicon.ico', (req: Request, res: Response) => res.status(204).end());
 
-app.get("/api/v1", (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: "Recipe Finder API v1 is running",
-  });
-});
 
+app.get("/api/v1", (req: Request, res: Response) => {
+    res.status(200).json({
+      success: true,
+      message: "Recipe Finder API v1 is running",
+    });
+});
 
 
 // API routes
 app.use(`${PREFIX}/auth`, authRouter);
 app.use(`${PREFIX}/meals`, mealsRouter);
 
+
 // ========================================
 // ERROR HANDLERS - MUST BE LAST
-// ========================================
 
 // 404 handler
 app.use((req: Request, res: Response, next: NextFunction) => {

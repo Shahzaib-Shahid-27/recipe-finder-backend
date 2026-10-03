@@ -1,10 +1,8 @@
-import { OAuth2Client } from "google-auth-library";
-import bcrypt from "bcryptjs";
-
-import AppError from "../utils/AppError.js";
-import authRepository from "../repositories/auth.repository.js";
-
 import {generateAccessToken,generateRefreshToken,} from "../utils/TokenGen.js";
+import authRepository from "../repositories/auth.repository.js";
+import { OAuth2Client } from "google-auth-library";
+import AppError from "../utils/AppError.js";
+import bcrypt from "bcryptjs";
 
 const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, 10);
@@ -13,10 +11,7 @@ const hashPassword = async (password: string): Promise<string> => {
 const getRefreshTokenExpiry = (): Date =>
   new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-const comparePassword = async (
-  password: string,
-  hashedPassword: string
-): Promise<boolean> => {
+const comparePassword = async (password: string,hashedPassword: string): Promise<boolean> => {
   return await bcrypt.compare(password, hashedPassword);
 };
 
@@ -28,13 +23,10 @@ const googleClient = new OAuth2Client(
 
 // ==============================
 // REGISTER
-// ==============================
 
-const registerUser = async (
-  name: string,
-  email: string,
-  password: string
-) => {
+
+const registerUser = async (name: string, email: string, password: string) => {
+
   const existingUser = await authRepository.findUserByEmail(email);
 
   if (existingUser) {
@@ -71,12 +63,9 @@ const registerUser = async (
 
 // ==============================
 // LOGIN
-// ==============================
 
-const loginUser = async (
-  email: string,
-  password: string
-) => {
+const loginUser = async ( email: string, password: string) => {
+  
   const user = await authRepository.findUserByEmail(email);
 
   if (!user) {
@@ -121,9 +110,9 @@ const loginUser = async (
 
 // ==============================
 // LOGOUT
-// ==============================
 
 const logout = async (userId: string) => {
+
   const user = await authRepository.findUserById(userId);
 
   if (user?.refreshToken) {
@@ -135,9 +124,9 @@ const logout = async (userId: string) => {
 
 // ==============================
 // FORGOT PASSWORD
-// ==============================
 
 const forgotPassword = async (email: string) => {
+
   const user = await authRepository.findUserByEmail(email);
 
   if (!user) {
@@ -150,12 +139,9 @@ const forgotPassword = async (email: string) => {
 
 // ==============================
 // RESET PASSWORD
-// ==============================
 
-const resetPassword = async (
-  email: string,
-  newPassword: string
-) => {
+const resetPassword = async ( email: string, newPassword: string) => {
+
   const user = await authRepository.findUserByEmail(email);
 
   if (!user) {
@@ -174,7 +160,6 @@ const resetPassword = async (
 
 // ==============================
 // GET PROFILE
-// ==============================
 
 const getProfile = async (userId: string) => {
   const user = await authRepository.findUserById(userId);
@@ -190,13 +175,11 @@ const getProfile = async (userId: string) => {
 
 // ==============================
 // REFRESH ACCESS TOKEN
-// ==============================
 
-const refreshAccessToken = async (
-  refreshToken: string
-) => {
-  const storedToken =
-    await authRepository.findUserByRefreshToken(
+
+const refreshAccessToken = async ( refreshToken: string ) => {
+
+  const storedToken = await authRepository.findUserByRefreshToken(
       refreshToken
     );
 
@@ -208,6 +191,7 @@ const refreshAccessToken = async (
     storedToken.expiresAt &&
     new Date(storedToken.expiresAt) < new Date()
   ) {
+
     throw new AppError("Refresh token expired.", 401);
   }
 
@@ -233,9 +217,9 @@ const refreshAccessToken = async (
 
 // ==============================
 // GOOGLE REDIRECT URL
-// ==============================
 
 const getGoogleAuthUrl = (): string => {
+
   if (!process.env.GOOGLE_CLIENT_ID) {
     throw new AppError(
       "GOOGLE_CLIENT_ID is missing.",
@@ -270,7 +254,6 @@ const getGoogleAuthUrl = (): string => {
 
 // ==============================
 // GOOGLE CALLBACK
-// ==============================
 
 const googleCallback = async (code: string) => {
   if (!code) {
@@ -317,9 +300,8 @@ const googleCallback = async (code: string) => {
 
 // ==============================
 // GOOGLE LOGIN
-// ==============================
 
-const googleLogin = async (idToken: string) => {
+const googleLogin = async ( idToken: string ) => {
   if (!process.env.GOOGLE_CLIENT_ID) {
     throw new AppError(
       "GOOGLE_CLIENT_ID is missing.",
@@ -414,6 +396,7 @@ const googleLogin = async (idToken: string) => {
       },
       user: safeUser,
     };
+
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
@@ -435,7 +418,6 @@ const googleLogin = async (idToken: string) => {
 
 // ==============================
 // EXPORT
-// ==============================
 
 export default {
   registerUser,

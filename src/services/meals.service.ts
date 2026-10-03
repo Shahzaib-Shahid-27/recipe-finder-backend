@@ -29,6 +29,7 @@ export const getAllMeals = async () => {
 
 // Fetches one meal by its TheMealDB id.
 export const getMealById = async (id: string) => {
+    
     const response = await axios.get(`${BASE_URL}/lookup.php`, {
         params: { i: id },
     });

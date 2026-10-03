@@ -4,6 +4,7 @@ import * as mealsServices from "../services/meals.service.js";
 import { getPaginationParams, paginate } from "../utils/pagination.js";
 
 export const getAllMeals = asyncHandler(async (req: Request, res: Response) => {
+
     const { page, limit } = getPaginationParams(req);
 
     const allMeals = await mealsServices.getAllMeals();
@@ -17,6 +18,7 @@ export const getAllMeals = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getMealById = asyncHandler(async (req: Request, res: Response) => {
+    
     const { id } = req.params;
     const mealId = String(id)
 

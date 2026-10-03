@@ -23,12 +23,7 @@ interface CustomError extends Error {
   statusCode?: number;
 }
 
-function errorHandler(
-  err: CustomError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+function errorHandler(err: CustomError, req: Request, res: Response, next: NextFunction): void {
   // Check if it's an AppError (operational)
   const isAppError = err instanceof AppError;
   const isOperational = err.isOperational || isAppError || false;
@@ -46,6 +41,7 @@ function errorHandler(
       statusCode,
       userId: req.user?.userId,
     });
+    
   } else {
     logger.error(`Unexpected Error [${statusCode}]: ${message}`, {
       requestId,

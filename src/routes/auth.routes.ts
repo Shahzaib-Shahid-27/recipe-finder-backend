@@ -4,51 +4,24 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 export const authRouter = Router();
 
-authRouter.post(
-  "/register",
-  authController.register
-);
+authRouter.post("/register",authController.register);
 
-authRouter.post(
-  "/login",
-  authController.login
-);
+authRouter.post("/login",authController.login);
 
-
-// Google OAuth
-authRouter.get(
-  "/google",
-  authController.googleRedirect
-);
+authRouter.get("/google",authController.googleRedirect);
 
 authRouter.get("/google", authController.googleRedirect);
+
 authRouter.get("/google/callback", authController.googleCallback);
 
 authRouter.post('/forgot-password', authController.forgotPassword)
 
+authRouter.post("/logout",authController.logout);
 
-authRouter.post(
-  "/logout",
-  authController.logout
-);
+authRouter.post("/forgot-password",authController.forgotPassword);
 
-authRouter.post(
-  "/forgot-password",
-  authController.forgotPassword
-);
+authRouter.post("/reset-password",authController.resetPassword);
 
-authRouter.post(
-  "/reset-password",
-  authController.resetPassword
-);
+authRouter.post("/refresh",authController.refreshToken);
 
-authRouter.post(
-  "/refresh",
-  authController.refreshToken
-);
-
-authRouter.get(
-  "/get-profile",
-  verifyJWT,
-  authController.getProfile
-);
+authRouter.get("/get-profile",verifyJWT,authController.getProfile);

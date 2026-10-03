@@ -1,6 +1,5 @@
 import { Router } from "express";
 import * as mealsController from "../controllers/meals.controller.js";
-// import { verifyJWT } from "../middlewares/auth.middleware.ts";
 
 export const mealsRouter = Router();
 

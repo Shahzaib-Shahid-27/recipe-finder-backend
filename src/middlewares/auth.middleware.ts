@@ -2,7 +2,6 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
 import AppError from '../utils/AppError.js';
-// import { prisma } from '../prisma/prisma.js';
 
 // Extend Express Request interface to include user
 declare global {
@@ -16,9 +15,7 @@ declare global {
   }
 }
 
-/**
- * Middleware: Verify JWT for all authenticated users
- */
+/* * Middleware: Verify JWT for all authenticated users */
 export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
