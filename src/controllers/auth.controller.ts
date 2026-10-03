@@ -249,7 +249,8 @@
           code
         );
 
-      const frontendUrl = process.env.FRONTEND_URL ||
+      const frontendUrl = 
+      process.env.FRONTEND_URL ||
         "http://localhost:5173";
 
       res.redirect(
